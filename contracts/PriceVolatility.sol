@@ -14,17 +14,48 @@ import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.so
 contract StocksBattlePriceNFT is ERC721, ERC721URIStorage {
     using Counters for Counters.Counter;
     using Strings for uint256;
+    int256 internal BTCVolatility;
+    int256 internal ETHVolatility;
 
     Counters.Counter public tokenIdCounter;
 
-    // Create price feed
-    AggregatorV3Interface internal bitcoinPriceFeed;
-    AggregatorV3Interface internal goldPriceFeed ;
-    uint256 public lastPrice = 0;
+    // https://docs.chain.link/data-feeds/rates-feeds/addresses        
 
-    string bitcoinIsCooking = unicode"₿😈 🔥 🏅😔";
-    string goldIsCooking = unicode"₿😔 🔥 🏅😈";
-    string equalVolatility = unicode"₿ 🔥 🏅";
+    // Create price feed
+       // Sepolia BTC/USD
+    AggregatorV3Interface internal bitcoinDayVolatilityFeed= AggregatorV3Interface(
+            
+            0x28f9134a15cf0aAC9e1F0CD09E17f32925254C77            
+        );
+    AggregatorV3Interface internal bitcoinWeekVolatilityFeed= AggregatorV3Interface(
+            
+            0x88163626786Ee98AA1De65BD2A76599e71598FD9            
+        );
+    AggregatorV3Interface internal bitcoinMonthVolatilityFeed= AggregatorV3Interface(
+            
+            0xabfe1e28F54Ac40776DfCf2dF0874D37254D5F59            
+        );
+
+        // Sepolia ETH/USD
+    AggregatorV3Interface internal ethereumDayVolatilityFeed = AggregatorV3Interface(
+           
+            0x31D04174D0e1643963b38d87f26b0675Bb7dC96e            
+        );
+    AggregatorV3Interface internal ethereumWeekVolatilityFeed = AggregatorV3Interface(
+            
+            0xF3140662cE17fDee0A6675F9a511aDbc4f394003            
+        );
+    AggregatorV3Interface internal ethereumMonthVolatilityFeed = AggregatorV3Interface(
+            
+            0x8e604308BD61d975bc6aE7903747785Db7dE97e2            
+        );
+
+    
+
+
+    string bitcoinIsCooking = unicode"Bitcoin is cooking ₿ 🔥";
+    string ethereumIsCooking = unicode"Ethereum is cooking 💎 🔥";
+    string equalVolatility = unicode"₿ 🔥 💎";
     string public priceIndicator;
 
     struct ChainStruct {
@@ -35,7 +66,7 @@ contract StocksBattlePriceNFT is ERC721, ERC721URIStorage {
     mapping (uint256 => ChainStruct) chain;
 
     //https://docs.chain.link/ccip/supported-networks/testnet
-    constructor() ERC721("CrossChain Price", "CCPrice") {
+    constructor() ERC721("CrossChain Stocks Battle", "CCSB") {
         chain[0] = ChainStruct ({
             code: 16015286601757825753,
             name: "Sepolia",
@@ -57,40 +88,30 @@ contract StocksBattlePriceNFT is ERC721, ERC721URIStorage {
             color: "#4b006e" //purple
         });
 
-        // https://docs.chain.link/data-feeds/price-feeds/addresses        
-        bitcoinPriceFeed = AggregatorV3Interface(
-            // Sepolia BTC/USD
-            0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43            
-        );
-
-        goldPriceFeed = AggregatorV3Interface(
-            // Sepolia XAU/USD
-            0xC5981F461d74c46eB4b0CF3f4Ec79f025573B0Ea            
-        );
-
         
+        priceIndicator = unicode"₿ and 💎";
 
         // Mint an NFT
-        mint(msg.sender);
+        mint(msg.sender, 0, 1);
     }
 
-    function mint(address to) public {
+    function mint(address to, uint256 _sourceId, uint256 _period) public {
         // Mint from Sepolia network = chain[0]
-        mintFrom(to, 0);
+        mintFrom(to, _sourceId, _period);
     }
 
-    function mintFrom(address to, uint256 sourceId) public {
+    function mintFrom(address to, uint256 sourceId, uint256 _period) public {
         // sourceId 0 Sepolia, 1 Fuji, 2 Mumbai
         uint256 tokenId = tokenIdCounter.current();
         _safeMint(to, tokenId);
-        updateMetaData(tokenId, sourceId);    
+        updateMetaData(tokenId, sourceId, _period);    
         tokenIdCounter.increment();
     }
 
     // Update MetaData
-    function updateMetaData(uint256 tokenId, uint256 sourceId) public {
+    function updateMetaData(uint256 tokenId, uint256 sourceId, uint256 _period) public {
         // Create the SVG string
-        string memory finalSVG = buildSVG(sourceId);
+        string memory finalSVG = buildSVG(sourceId, _period);
            
         // Base64 encode the SVG
         string memory json = Base64.encode(
@@ -104,8 +125,10 @@ contract StocksBattlePriceNFT is ERC721, ERC721URIStorage {
                         '"attributes": [',
                             '{"trait_type": "source",',
                             '"value": "', chain[sourceId].name ,'"},',
-                            '{"trait_type": "price",',
-                            '"value": "', lastPrice.toString() ,'"}',
+                            '{"trait_type": "Ethereum volatility",',
+                            '"value": "', ETHVolatility ,'"}',
+                            '{"trait_type": "Bitcoin volatility",',
+                            '"value": "', BTCVolatility ,'"}',
                         ']}'
                     )
                 )
@@ -120,7 +143,7 @@ contract StocksBattlePriceNFT is ERC721, ERC721URIStorage {
     }
 
     // Build the SVG string
-    function buildSVG(uint256 sourceId) internal returns (string memory) {
+    function buildSVG(uint256 sourceId, uint256 _period) internal returns (string memory) {
 
         // Create SVG rectangle with random color
         string memory headSVG = string(
@@ -134,7 +157,7 @@ contract StocksBattlePriceNFT is ERC721, ERC721URIStorage {
         string memory bodySVG = string(
             abi.encodePacked(
                 "<text x='50%' y='50%' font-size='128' dominant-baseline='middle' text-anchor='middle'>",
-                comparePrice(),
+                compareVolatility(_period),
                 "</text>"
             )
         );
@@ -149,37 +172,41 @@ contract StocksBattlePriceNFT is ERC721, ERC721URIStorage {
     }
 
     // Compare new price to previous price
-    function comparePrice() public returns (string memory) {
-        int256 btcChange = getChainlinkDataFeedLatestAnswer("BTC");
-        int256 xauChange = getChainlinkDataFeedLatestAnswer("XAU");
-        if (btcChange > xauChange) {
+    function compareVolatility(uint256 _period) public returns (string memory) {
+       
+        
+        int256 btcVolatility ;
+        int256 ethVolatility ;
+        (btcVolatility, ethVolatility) = getVolatilityFeedLatestAnswer(_period);
+        
+        BTCVolatility = btcVolatility;
+        ETHVolatility = ethVolatility;
+        if (btcVolatility > ethVolatility) {
             priceIndicator = bitcoinIsCooking;
-        } else if (btcChange < xauChange) {
-            priceIndicator = goldIsCooking;
+        } else if (btcVolatility < ethVolatility) {
+            priceIndicator = ethereumIsCooking;
         } else {
             priceIndicator = equalVolatility;
         }
         return priceIndicator;
     }
 
-    function getChainlinkDataFeedLatestAnswer(string calldata _stock) public view returns (int256) {
-      
-        if(keccak256(abi.encodePacked(_stock)) == keccak256(abi.encodePacked("BTC"))){
-            (, int256 btcPriceNow, , , ) = bitcoinPriceFeed.latestRoundData();
-            uint80 roundId24hAgo = uint80(block.timestamp - 24 hours); // Example calculation for roundId24hAgo
-            (, int256 btcPrice24hAgo, , , ) = bitcoinPriceFeed.getRoundData(roundId24hAgo);
-            int256 btcChange = ((btcPriceNow - btcPrice24hAgo) * 100) / btcPrice24hAgo;
-        
-                return btcChange;
-
+    function getVolatilityFeedLatestAnswer(uint256 _period) public view returns (int256 btcVolatility, int256 ethVolatility) {
+               
+        if(_period == 1){
+            
+            (, btcVolatility, , , ) = bitcoinDayVolatilityFeed.latestRoundData();
+            (, ethVolatility, , , ) = ethereumDayVolatilityFeed.latestRoundData();
+        } else if(_period == 7){
+            
+            (, btcVolatility, , , ) = bitcoinWeekVolatilityFeed.latestRoundData();
+            (, ethVolatility, , , ) = ethereumWeekVolatilityFeed.latestRoundData();
+        } else if(_period == 30){
+            
+            (, btcVolatility, , , ) = bitcoinMonthVolatilityFeed.latestRoundData();
+            (, ethVolatility, , , ) = ethereumMonthVolatilityFeed.latestRoundData();
         }
-        else if(keccak256(abi.encodePacked(_stock)) == keccak256(abi.encodePacked("XAU"))){
-        (, int256 xauPriceNow, , , ) = goldPriceFeed.latestRoundData();
-        uint80 roundId24hAgo = uint80(block.timestamp - 24 hours); // Example calculation for roundId24hAgo
-        (, int256 xauPrice24hAgo, , , ) = goldPriceFeed.getRoundData(roundId24hAgo);
-        int256 xauChange = ((xauPriceNow - xauPrice24hAgo) * 100) / xauPrice24hAgo;
-        return xauChange;
-        }
+        return (btcVolatility, ethVolatility);
 
     }
 
