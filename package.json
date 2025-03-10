@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "This project uses the chainlink CCIP and DataFeeds to mint cross chains NFTs based on some stocks prices",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "test:xauPriceNFT": "npx hardhat test test/xauPriceNFT.js"
   },
   "repository": {
     "type": "git",
