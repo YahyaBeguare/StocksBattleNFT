@@ -8,7 +8,7 @@ describe("XAUPriceNFT Contract", function () {
     XAUPriceNFT = await ethers.getContractFactory("XAUPriceNFT");
     [owner, addr1] = await ethers.getSigners();
     xauPriceNFT = await XAUPriceNFT.deploy();
-    await xauPriceNFT.deployed();
+    await xauPriceNFT.waitForDeployment();
   });
 
   it("Should deploy and mint an NFT to the owner", async function () {

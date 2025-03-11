@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "description": "This project uses the chainlink CCIP and DataFeeds to mint cross chains NFTs based on some stocks prices",
   "main": "index.js",
-  "type": "commonjs",
   "scripts": {
     "test": "npx hardhat test",
-    "test:xauPriceNFT": "npx hardhat test test/xauPriceNFT.js"
+    "test:xauPriceNFT": "npx hardhat test test/xauPriceNFT.test.js"
   },
   "repository": {
     "type": "git",
@@ -20,12 +19,12 @@
   "homepage": "https://github.com/YahyaBeguare/StocksBattleNFT#readme",
   "dependencies": {
     "@chainlink/contracts": "^1.3.0",
+    "@chainlink/contracts-ccip": "^1.5.0",
     "@openzeppelin/contracts": "^4.6.0",
     "dotenv": "^16.4.7",
     "hardhat": "^2.22.19"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "chai": "^5.2.0"
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0"
   }
 }
