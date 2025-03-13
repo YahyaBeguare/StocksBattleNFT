@@ -21,6 +21,7 @@ module.exports = {
     // gasPrice: 20, 
    offline: true,           
   },
+  defaultNetwork: "sepolia",
   networks: {
     hardhat: {},
     sepolia: {

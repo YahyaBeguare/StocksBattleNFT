@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
-    "test:xauPriceNFT": "npx hardhat test test/xauPriceNFT.test.js"
+    "test:xauPriceNFT": "npx hardhat test test/xauPriceNFT.test.js",
+    "deployXAUNFT": "npx hardhat run scripts/deployXAUPrice.js"
   },
   "repository": {
     "type": "git",
@@ -20,7 +21,7 @@
   "dependencies": {
     "@chainlink/contracts": "^1.3.0",
     "@chainlink/contracts-ccip": "^1.5.0",
-    "@openzeppelin/contracts": "^5.2.0",
+    "@openzeppelin/contracts": "^4.6.0",
     "dotenv": "^16.4.7",
     "hardhat": "^2.22.19"
   },
